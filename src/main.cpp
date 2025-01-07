@@ -9,6 +9,7 @@
 #include "robot.h"
 #include "odometry.h"
 #include "pure_pursuit.h"
+#include<list>
 
 using namespace pros;
 using namespace std;
@@ -81,62 +82,19 @@ int pressed = 0;
 string autstr;
 float errorp;
 
+list<int> leftSideVoltage = {};
+list<int> RightSideVoltage = {};
+list<int> leftSideEnc = {};
+list<int> RightSideEnc = {};
+list<int> angleList = {};
+
+
+
+
 
  
 void competition_initialize() {
-    while(true) {
-      // if(selec.get_value() == true) {
-      //   atn ++;  
-      //   delay(350);
-      // }
 
-      if(selec.get_value() == true) {
-        pressed ++;  
-      } else {
-        pressed = 0;
-      }
-
-      if (pressed == 1){
-        atn++;
-      }
-
-
-      //resetEncoders();
-      
-      if (atn == 0) {
-        autstr = "NONE";
-        con.print(0, 0, "Aut 0: %s", autstr);
-      }
-      else if (atn == 1) {
-        autstr = "BLUE RIGHT";
-        con.print(0, 0, "Aut 1: %s", autstr);
-      }
-      else if (atn == 2) {
-        autstr = "BLUE LEFT";
-        con.print(0, 0, "Aut 2: %s", autstr);
-      }
-      else if (atn == 3) {
-       autstr = "RED RIGHT";
-        con.print(0, 0, "Aut 3: %s", autstr);
-      }
-      else if (atn == 4) {
-       autstr = "RED LEFT";
-        con.print(0, 0, "Aut 4: %s", autstr);
-      }
-      else if (atn == 5) {
-       autstr = "SKILLS";
-        con.print(0, 0, "Aut 5: %s", autstr);
-      }
-      else if (atn == 6) {
-       autstr = "DISRUPT";
-        con.print(0, 0, "Aut 6: %s", autstr);
-      } 
-      else if (atn == 7) {
-       atn = 0;
-      }
-  
-      con.clear();
-    }
 }
 
 
@@ -177,40 +135,10 @@ void opcontrol() {
   double rotoAngle = 0;
   float xvelo = 0;
 
-  imu.tare_heading();
-  LIFT.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
-
-
-
-TEST.move(127);
-//TEST2.move(127);
-delay(3500);
 
 	while (true) {
 
-  pros::c::imu_accel_s_t accel = imu.get_accel();
 
-  // if(abs(accel.x)>0.04){
-  // xvelo += accel.x;
-  // }
-  xvelo += accel.x-0.032;
-
-    OpticalC.set_led_pwm(100);
-
-    //TEST2.move_velocity(300);
-    if(TEST.get_actual_velocity() > maxRPM){
-      maxRPM = TEST.get_actual_velocity();
-    }
-
-    
-
-    motorTotal += TEST.get_actual_velocity();
-    cycle++;
-    avgRPM = motorTotal/cycle;
-
-
-
-  
 		//chassis arcade drive
 		int power = con.get_analog(ANALOG_LEFT_Y); //power is defined as forward or backward
 		int RX = con.get_analog(ANALOG_RIGHT_X); //turn is defined as left (positive) or right (negative)
@@ -246,272 +174,45 @@ delay(3500);
       RB.move(right);
     }
 
+  leftSideVoltage.push_front(con.get_analog(ANALOG_LEFT_Y));
+  RightSideVoltage.push_front(con.get_analog(ANALOG_RIGHT_Y));
+  leftSideEnc.push_front(LF.get_position());
+  RightSideEnc.push_front(RF.get_position());
+  angleList.push_front(imu.get_rotation());
 
 
-    //auton selector
-    if (selec.get_value() == true) { 
-      atn++;
-      delay(350);
-    }
-      // brain was here
-    // switch(atn){
-    //   case 0:
-    //     autstr = "Auton 0";
-    //     break;
-    //   case 1:
-    //     autstr = "Auton 1";
-    //     break;
-    //   case 2:
-    //     autstr = "Auton 2";
-    //     break;
-    //   case 3:
-    //     autstr = "Auton 3";
-    //     break;
-    //   case 4:
-    //     autstr = "Auton 4";
-    //     break;
-    //   case 5:
-    //     autstr = "Auton 5";
-    //     break;
-    //   case 6:
-    //     autstr = "Auton 6";
-    //     break;
-    //   case 7:
-    //     atn = 0;
-    //     break;
 
-    // }
-    
-    if (atn == 0) {
-      autstr = "NONE";
-    }
-    if (atn == 1) {
-      autstr = "BLUE RIGHT";
-    }
-    else if (atn == 2) {
-      autstr = "BLUE LEFT";
-    }
-    else if (atn == 3) {
-      autstr = "RED RIGHT";
-    }
-    else if (atn == 4) {
-      autstr = "RED LEFT";
-    }
-    else if (atn == 5) {
-      autstr = "SKILLS";
-    } 
-    else if (atn == 6) {
-      autstr = "Auton 6";
-    }
-    else if (atn == 7) {
-      atn = 0;
-    }
+    if(con.get_digital_new_press(E_CONTROLLER_DIGITAL_B)){
 
-  if (con.get_digital_new_press(E_CONTROLLER_DIGITAL_R1)){
-    NEWR1 = true;
-  } else {
-    NEWR1 = false;
-  }
-
-  if (con.get_digital_new_press(E_CONTROLLER_DIGITAL_R2)){
-    NEWR2 = true;
-  } else {
-    NEWR2 = false;
-  }
-
-  if (con.get_digital_new_press(E_CONTROLLER_DIGITAL_L2)){
-    NEWL2 = true;
-  } else {
-    NEWL2 = false;
-  }
-
-  
-  if (con.get_digital_new_press(E_CONTROLLER_DIGITAL_L1)){
-    NEWL1 = true;
-  } else {
-    NEWL1 = false;
-  }
-
-//Double Press Logic
-
-    if (((con.get_digital(E_CONTROLLER_DIGITAL_R1) && NEWR2) || (NEWR1 && con.get_digital(E_CONTROLLER_DIGITAL_R2))) || ((NEWR1 && NEWR2) || (con.get_digital(E_CONTROLLER_DIGITAL_R1) && con.get_digital(E_CONTROLLER_DIGITAL_R2)))){
-      //Double Press action
-      INTAKE.move(127);
-      HOOKS.move(-95);
-    // HOOKS.move(-127);
-    } else if  (con.get_digital(E_CONTROLLER_DIGITAL_R1)) {
-			INTAKE.move(-127);
-      HOOKS.move(-127);
-		} else if (con.get_digital(E_CONTROLLER_DIGITAL_R2)) {
-			INTAKE.move(127);
-     HOOKS.move(127);
-		} else {
-			INTAKE.move(0);
-      HOOKS.move(0);
-		}
-    // sreverse = false;
-    // stallProtection = true;
-    // stall();
-    // hooks(127);
-
-
-// INTAKE.move(127);
-// ColorSort(1);
-//lift
-    if (con.get_digital(E_CONTROLLER_DIGITAL_L1)) {
-      LIFT.move(127);
-      liftAngle = LIFT.get_position();
-      liftToggle = false;
-    }
-    else if (con.get_digital(E_CONTROLLER_DIGITAL_L2)){
-      LIFT.move(-127);
-      liftAngle = LIFT.get_position();
-      liftToggle = false;
-    } else if (liftToggle){
-      setConstants(LIFT_KP2,LIFT_KI2,LIFT_KD2);
-      if(roto.get_angle() < 15000){
-        rotoAngle = roto.get_angle() + 36000;
-      } else {
-        rotoAngle = roto.get_angle();
+      std::cout << "leftSideVoltage:" << std::endl;
+      for (int x : leftSideVoltage) {
+        std::cout << x << ", ";
       }
-      LIFT.move(calcPID(30200,(rotoAngle),0,0,true));
-    } else {
-      setConstants(LIFT_KP,LIFT_KI,LIFT_KD);
-      LIFT.move(calcPID(liftAngle,LIFT.get_position(),0,0,true));
+
+      std::cout << "RightSideVoltage:" << std::endl;
+      for (int x : RightSideVoltage) {
+        std::cout << x << ", ";
+      }
+
+      std::cout << "leftSideEnc:" << std::endl;
+      for (int x : leftSideEnc) {
+        std::cout << x << ", ";
+      }
+
+      std::cout << "RightSideEnc:" << std::endl;
+      for (int x : RightSideEnc) {
+        std::cout << x << ", ";
+      }
+
+      std::cout << "angleList:" << std::endl;
+      for (int x : angleList) {
+        std::cout << x << ", ";
+      }
+
     }
-
-//Non Double Press Logic
-    if (con.get_digital(E_CONTROLLER_DIGITAL_R1)) {
-			INTAKE.move(127);
-		} 
-    else if (con.get_digital(E_CONTROLLER_DIGITAL_R2)) {
-			INTAKE.move(-127);
-		} 
-    else {
-			INTAKE.move(0);
-		}
-    
-
-
-
-
-    //pid tester
-    if (con.get_digital_new_press(E_CONTROLLER_DIGITAL_X)) {
-      // longValues = true;
-      // driveClampS(-2500, 400, 70);
-      // longValues = false;
-    //   chasMove(40,40,40,40,40,40);
-    //  hang.set_value(true);
-    //   delay(2000);
-
-      
-      //driveArcLF(130, 600, 3000);
-      // mogoValues=true;
-      //  driveTurn2(40);
-      // setPosition(0,0,0);
-      // boomerang(0, -1000);
-      //boomerang(-1000, 1000);
-     // boomerang(0, 0);
-     //setPosition(0, 0, 0);
-     //boomerang(-1000, 1000);
-     // driveArcLF(-90, 100, 1800);
-
-    //  driveArcL(90, 300, 3000);
-
-
-  // setPosition(0, 0, 0);
-  // //boomerang(0, 90);
-  // boomerang(48, 60);
-  // boomerang(0, 10);
-
-
-  
-    //  boomerang(-3500, 3500);
-    //  boomerang(-3500, 0);
-    //  boomerang(0, 0);
-    
-    // driveTurn2(175);
-    // driveStraight(625);
-    // LIFT.move(-127);
-    // driveStraight2(-1000);
-    // driveTurn2(100);
-    // driveStraight2(1000);
-    // mogoValues = true;
-    // driveTurn(175);
-
-    // driveArcLF(90,300,1800);
-    driveStraightC(350);
-    driveArcLF(45, 50, 2000);
-    driveStraightC(1000);
-    driveArcRF(45, 300, 1800);
-    driveStraight2(200);
-   // driveStraight2(100);
-    
-    // initializePath();
-    // initializePathDistances();
-    // purePursuitController();
-
-
-     
-      // while(true){
-      // odometry2();
-      // delay(5);
-      // }
-    }
-
-    odometry2();
-
-    if (con.get_digital_new_press(E_CONTROLLER_DIGITAL_UP)){
-        intakeToggle = !intakeToggle;
-    }
-
-    if (con.get_digital_new_press(E_CONTROLLER_DIGITAL_LEFT)){
-        liftToggle = !liftToggle;
-    }
-
-  intake.set_value(intakeToggle);
-      if (con.get_digital_new_press(E_CONTROLLER_DIGITAL_A)){
-        hangToggle = !hangToggle;
-    }
-
-  hang.set_value(hangToggle);
-
-
-    if (con.get_digital_new_press(E_CONTROLLER_DIGITAL_DOWN)){
-        mogoToggle = !mogoToggle;
-    }
-
-  mogo.set_value(mogoToggle);
-
-      if (con.get_digital_new_press(E_CONTROLLER_DIGITAL_B)){
-        scrapperToggle = !scrapperToggle;
-    }
-
-  scrapper.set_value(scrapperToggle);
-  //piston2.set_value(wingToggle);
-
-
-
-  // if (con.get_digital(E_CONTROLLER_DIGITAL_DOWN)){
-  //    piston.set_value(true);
-  // } else {
-  //    piston.set_value(false);
-  // }
-
-      //printing stuff
-		double chasstempC = ((RF.get_temperature() + RB.get_temperature() + LF.get_temperature() + LB.get_temperature())/4);
-    if (time % 50 == 0 && time % 100 != 0 && time % 150 != 0){
-      con.print(0, 0, "AUTON: %s           ", autstr);
-      //con.print(0, 0, "imu: %f         ", imu.get_heading());
-    } else if (time % 100 == 0 && time % 150 != 0){
-      //con.print(1, 0, "error: %f           ",float(chasstempC));
-      con.print(1, 0, "MAX: %f           ",float(maxRPM));
-    } else if (time % 150 == 0){
-      con.print(2, 0, "AVG: %f        ", float(avgRPM)); 
-      // pros::lcd::print(1, "errorp:%f ", float(error));
-    } 
 
 	  	time += 1;
 		  delay(1);
+
 	  }
   }
