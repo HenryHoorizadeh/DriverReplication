@@ -7,8 +7,6 @@
 #include "pros/misc.h"
 #include "pros/motors.h"
 #include "robot.h"
-#include "odometry.h"
-#include "pure_pursuit.h"
 #include<list>
 
 using namespace pros;
@@ -81,12 +79,13 @@ int RingColor = 2;
 int pressed = 0;
 string autstr;
 float errorp;
+int time3;
 
-list<int> leftSideVoltage = {};
-list<int> RightSideVoltage = {};
-list<int> leftSideEnc = {};
-list<int> RightSideEnc = {};
-list<int> angleList = {};
+vector<int> leftSideVoltage = {};
+vector<int> RightSideVoltage = {};
+vector<int> leftSideEnc = {};
+vector<int> RightSideEnc = {};
+vector<int> angleList = {};
 
 
 
@@ -115,103 +114,28 @@ void competition_initialize() {
 
 
 void opcontrol() {
-  int cycle = 0;
-  int time = 0;
-  bool NEWL1 = false;
-  bool NEWL2 = false;
-  bool NEWR2 = false;
-  bool NEWR1 = false;
-  bool arcToggle = false;
-  bool tankToggle = true;
-  bool mogoToggle = true;
-  bool intakeToggle = false;
-  bool scrapperToggle = false;
-  bool hangToggle = false;
-  bool liftToggle = false;
-  double maxRPM = 0;
-  double motorTotal = 0;
-  double avgRPM = 0;
-  double liftAngle = 0; 
-  double rotoAngle = 0;
-  float xvelo = 0;
+int headingCorrection = 0;
+int left = 0;
+int right = 0;
+
+setConstants(1, 0, 1); // left side pid values
+setConstants2(1, 0, 1); //right side pid values
+setConstants3(1, 0, 1); //heading correction values
 
 
 	while (true) {
 
+    headingCorrection = calcPID3(angleList[time3], imu.get_rotation(), 0, 0);
+    left = leftSideVoltage[time3] + calcPID(leftSideEnc[time3], LF.get_position(), 0, 0) + headingCorrection;
+    right = RightSideVoltage[time3] + calcPID(RightSideEnc[time3], LF.get_position(), 0, 0) + headingCorrection;
+    LF.move(left);
+    LM.move(left);
+    LB.move(left);
+    RF.move(right);
+    RM.move(right);
+    RB.move(right);
 
-		//chassis arcade drive
-		int power = con.get_analog(ANALOG_LEFT_Y); //power is defined as forward or backward
-		int RX = con.get_analog(ANALOG_RIGHT_X); //turn is defined as left (positive) or right (negative)
-
-    //int turn = int(RX); // Normal Rates
-		//int turn = int(abs(RX) * RX / 127); //X Squared Rates
-   int turn = int(pow(RX, 3) / pow(127, 2)); //X Cubed Rates
-		int left = power + turn;
-		int right = power - turn;
-
-    // //switch between arcade and tank
-    if (con.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_Y)) {
-      arcToggle = !arcToggle;
-      tankToggle = !tankToggle;
-    }
-
-
-   
-    if (tankToggle) {
-      LF.move(con.get_analog(ANALOG_LEFT_Y));
-      LM.move(con.get_analog(ANALOG_LEFT_Y));
-      LB.move(con.get_analog(ANALOG_LEFT_Y));
-      RF.move(con.get_analog(ANALOG_RIGHT_Y));
-      RM.move(con.get_analog(ANALOG_RIGHT_Y));
-      RB.move(con.get_analog(ANALOG_RIGHT_Y));
-    }
-    if (arcToggle) {
-      LF.move(left);
-      LM.move(left);
-      LB.move(left);
-      RF.move(right);
-      RM.move(right);
-      RB.move(right);
-    }
-
-  leftSideVoltage.push_front(con.get_analog(ANALOG_LEFT_Y));
-  RightSideVoltage.push_front(con.get_analog(ANALOG_RIGHT_Y));
-  leftSideEnc.push_front(LF.get_position());
-  RightSideEnc.push_front(RF.get_position());
-  angleList.push_front(imu.get_rotation());
-
-
-
-    if(con.get_digital_new_press(E_CONTROLLER_DIGITAL_B)){
-
-      std::cout << "leftSideVoltage:" << std::endl;
-      for (int x : leftSideVoltage) {
-        std::cout << x << ", ";
-      }
-
-      std::cout << "RightSideVoltage:" << std::endl;
-      for (int x : RightSideVoltage) {
-        std::cout << x << ", ";
-      }
-
-      std::cout << "leftSideEnc:" << std::endl;
-      for (int x : leftSideEnc) {
-        std::cout << x << ", ";
-      }
-
-      std::cout << "RightSideEnc:" << std::endl;
-      for (int x : RightSideEnc) {
-        std::cout << x << ", ";
-      }
-
-      std::cout << "angleList:" << std::endl;
-      for (int x : angleList) {
-        std::cout << x << ", ";
-      }
-
-    }
-
-	  	time += 1;
+	  	time3 += 1;
 		  delay(1);
 
 	  }
